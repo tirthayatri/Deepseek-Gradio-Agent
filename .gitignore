@@ -1,0 +1,30 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE
+.idea/
+.vscode/
+
+# Generated audio output
+output.wav
+
+# Auth file (contains credentials)
+auth.json
+
+# Coverage reports
+coverage/
+*.coverage
+
+# Saved conversation histories (may contain personal data)
+history/*.json
