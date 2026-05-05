@@ -68,7 +68,7 @@ SILICONFLOW_API_KEY=你的密钥
 ### 5. 运行
 
 ```bash
-python grdio_ui.py
+python gradio_ui.py
 ```
 
 浏览器访问 `http://localhost:19001`
@@ -77,7 +77,7 @@ python grdio_ui.py
 
 | 文件 | 说明 |
 |------|------|
-| `grdio_ui.py` | 主程序，Gradio UI 和业务逻辑 |
+| `gradio_ui.py` | 主程序，Gradio UI 和业务逻辑 |
 | `gpts.py` | DeepSeek API 封装 |
 | `persona.json` | AI 角色人格配置 |
 | `user.json` | 用户人格配置 |

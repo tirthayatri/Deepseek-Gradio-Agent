@@ -197,9 +197,36 @@ def load_history_file(filename):
 
 if __name__ == "__main__":
     custom_css = """
-    #chatbot-container { height: 60vh !important; }
-    #chatbot-txt { height: 20vh !important; }
-    #chatbot-btn { height: 20vh !important; }
+    .gradio-container {
+        max-width: 1400px !important;
+        margin: 0 auto !important;
+        padding: 8px 16px !important;
+    }
+    /* Left chatbot fills viewport height */
+    #chatbot {
+        min-height: calc(100vh - 80px) !important;
+        border-radius: 10px !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    /* Input box */
+    #msg-input textarea {
+        font-size: 14px !important;
+        border-radius: 8px !important;
+    }
+    /* All buttons: unified size */
+    .btn-u {
+        min-height: 40px !important;
+        height: 40px !important;
+        font-size: 14px !important;
+        border-radius: 6px !important;
+    }
+    /* Header title */
+    #page-title {
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+        line-height: 2.2 !important;
+    }
     """
 
     os.makedirs(HISTORY_DIR, exist_ok=True)
@@ -209,60 +236,129 @@ if __name__ == "__main__":
     user_personas = load_personas('user.json')
     user_personas_keys = list(user_personas.keys())
 
-    with gr.Blocks(css=custom_css) as demo:
-        chatbot = gr.Chatbot(show_copy_button=True, elem_id="chatbot-container")
+    with gr.Blocks(css=custom_css, title="DeepSeek Chat") as demo:
+
+        with gr.Row(equal_height=True):
+            with gr.Column(scale=5):
+                chatbot = gr.Chatbot(
+                    show_copy_button=True,
+                    elem_id="chatbot",
+                    bubble_full_width=False,
+                    label="对话",
+                )
+
+            with gr.Column(scale=3):
+                with gr.Row():
+                    gr.Markdown("**DeepSeek Chat**", elem_id="page-title")
+                    model = gr.Dropdown(
+                        value=dropdown_options[0], choices=dropdown_options,
+                        label="模型", scale=0, min_width=190,
+                    )
+
+                msg = gr.Textbox(
+                    placeholder="输入消息，Enter 发送…",
+                    show_label=False,
+                    container=False,
+                    elem_id="msg-input",
+                    lines=3,
+                    autofocus=True,
+                )
+
+                with gr.Row():
+                    send_btn = gr.Button(
+                        "发送", variant="primary", scale=1,
+                        elem_classes=["btn-u"],
+                    )
+                    clear_btn = gr.Button(
+                        "清空", variant="stop", scale=1,
+                        elem_classes=["btn-u"],
+                    )
+
+                token_num = gr.Number(value=0, visible=False, interactive=False)
+
+                with gr.Accordion("参数设置", open=False):
+                    with gr.Row():
+                        memory_num = gr.Number(value=10, label="记忆轮数", interactive=True)
+                        temperature = gr.Number(value=0.7, label="温度", interactive=True)
+                        user_ratio = gr.Number(value=0.1, label="用户视角比例", interactive=True)
+
+                with gr.Accordion("角色设置", open=False):
+                    with gr.Tabs():
+                        with gr.Tab("AI 角色"):
+                            persona_opt = gr.Dropdown(
+                                value=personas_keys[0], choices=personas_keys,
+                                label="选择角色",
+                            )
+                            persona_txt = gr.Textbox(
+                                label="角色描述", lines=5,
+                                value=personas[personas_keys[0]],
+                            )
+                            persona_save = gr.Button(
+                                "保存修改", elem_classes=["btn-u"],
+                            )
+                        with gr.Tab("用户角色"):
+                            user_persona_opt = gr.Dropdown(
+                                value=user_personas_keys[0], choices=user_personas_keys,
+                                label="选择用户",
+                            )
+                            user_persona_txt = gr.Textbox(
+                                label="用户描述", lines=5,
+                                value=user_personas[user_personas_keys[0]],
+                            )
+                            user_persona_save = gr.Button(
+                                "保存修改", elem_classes=["btn-u"],
+                            )
+
+                with gr.Accordion("对话历史", open=False):
+                    with gr.Row():
+                        save_name = gr.Textbox(
+                            placeholder="对话名称（留空自动时间戳）",
+                            show_label=False, container=False, scale=3,
+                        )
+                        save_btn = gr.Button(
+                            "保存", scale=1, min_width=72,
+                            elem_classes=["btn-u"],
+                        )
+                    with gr.Row():
+                        history_dropdown = gr.Dropdown(
+                            choices=list_histories(), show_label=False,
+                            container=False, scale=3,
+                        )
+                        load_btn = gr.Button(
+                            "加载", scale=1, min_width=72,
+                            elem_classes=["btn-u"],
+                        )
+                        refresh_btn = gr.Button(
+                            "刷新", scale=1, min_width=72,
+                            elem_classes=["btn-u"],
+                        )
+
         with gr.Row(visible=False):
             rec = gr.Audio(sources=['microphone'], type="filepath")
-            rec_btn = gr.Button('submit')
+            rec_btn = gr.Button("提交语音")
             rec_resp = gr.Audio(type="filepath")
 
-        msg = gr.Textbox(elem_id="chatbot-txt")
-        with gr.Row(elem_id="chatbot-btn"):
-            with gr.Column():
-                token_num = gr.Slider(minimum=0, maximum=4000, value=0, label='token num', visible=False, interactive=False)
-                memory_num = gr.Number(value=10, label='memory num', interactive=True)
-                temperature = gr.Number(value=0.7, label='temperature', interactive=True)
-            with gr.Column():
-                model = gr.Dropdown(value=dropdown_options[0], choices=dropdown_options, label='model')
-                clear = gr.Button('clear')
-
-        with gr.Row():
-            save_name = gr.Textbox(placeholder='对话名称（留空自动生成时间戳）', label='保存对话', scale=3)
-            save_btn = gr.Button('保存', scale=1)
-            history_dropdown = gr.Dropdown(choices=list_histories(), label='加载历史对话', scale=3)
-            load_btn = gr.Button('加载', scale=1)
-            refresh_btn = gr.Button('刷新列表', scale=1)
-
-        with gr.Row():
-            with gr.Column():
-                persona_opt = gr.Dropdown(value=personas_keys[0], choices=personas_keys)
-                user_ratio = gr.Number(value=0.1, label='ratio about user', interactive=True)
-                persona_txt = gr.Textbox(label='persona', lines=5, value=personas[personas_keys[0]])
-                persona_save = gr.Button('save change')
-            with gr.Column():
-                user_persona_opt = gr.Dropdown(value=user_personas_keys[0], choices=user_personas_keys)
-                user_persona_txt = gr.Textbox(label='user persona', lines=5, value=user_personas[user_personas_keys[0]])
-                user_persona_save = gr.Button('save change')
+        gen_inputs = [persona_txt, user_persona_txt, user_ratio, chatbot, memory_num, model, temperature]
 
         msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
-            predict_block,
-            [persona_txt, user_persona_txt, user_ratio, chatbot, memory_num, model, temperature],
-            [chatbot, token_num]
+            predict_block, gen_inputs, [chatbot, token_num]
         )
+        send_btn.click(user, [msg, chatbot], [msg, chatbot], queue=False).then(
+            predict_block, gen_inputs, [chatbot, token_num]
+        )
+        clear_btn.click(lambda: None, None, chatbot, queue=False)
 
-        persona_opt.change(lambda x: change_persona(x, 'persona.json'), inputs=[persona_opt], outputs=[persona_txt])
-        persona_save.click(lambda x, y: save_persona(x, y, 'persona.json'), inputs=[persona_opt, persona_txt])
-        user_persona_opt.change(lambda x: change_persona(x, 'user.json'), inputs=[user_persona_opt], outputs=[user_persona_txt])
-        user_persona_save.click(lambda x, y: save_persona(x, y, 'user.json'), inputs=[user_persona_opt, user_persona_txt])
+        persona_opt.change(lambda x: change_persona(x, 'persona.json'), [persona_opt], [persona_txt])
+        persona_save.click(lambda x, y: save_persona(x, y, 'persona.json'), [persona_opt, persona_txt])
+        user_persona_opt.change(lambda x: change_persona(x, 'user.json'), [user_persona_opt], [user_persona_txt])
+        user_persona_save.click(lambda x, y: save_persona(x, y, 'user.json'), [user_persona_opt, user_persona_txt])
 
-        clear.click(lambda: None, None, chatbot, queue=False)
-
-        save_btn.click(save_history, inputs=[chatbot, save_name], outputs=[history_dropdown])
-        load_btn.click(load_history_file, inputs=[history_dropdown], outputs=[chatbot])
+        save_btn.click(save_history, [chatbot, save_name], [history_dropdown])
+        load_btn.click(load_history_file, [history_dropdown], [chatbot])
         refresh_btn.click(lambda: gr.update(choices=list_histories()), outputs=[history_dropdown])
 
         rec_btn.click(
-            audio_to_text, inputs=[rec, chatbot], outputs=[rec, chatbot]
+            audio_to_text, [rec, chatbot], [rec, chatbot]
         ).then(
             predict_block_direct,
             [persona_txt, chatbot, memory_num, model, temperature],
