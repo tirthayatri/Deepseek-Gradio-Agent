@@ -37,12 +37,12 @@ def predict_block(system, system1, user_radio, history, memory_num, version, tem
             history_openai_format.append({"role": "assistant", "content": assistant})
 
     try:
-        response = openai_core(history_openai_format, version, temperature, stream=True)
+        response = openai_core(history_openai_format, version, temperature, stream=True)  # type: ignore[call-arg]
     except Exception as e:
         raise gr.Error(f"API 请求失败：{str(e)}")
 
     partial_message = ""
-    for chunk in response:
+    for chunk in response:  # type: ignore[union-attr]
         try:
             tmp = chunk.choices[0].delta.content
         except Exception:
@@ -66,8 +66,8 @@ def predict_block_direct(system, history, memory_num, version, temperature):
             history_openai_format.append({"role": "assistant", "content": assistant})
 
     try:
-        response = openai_core(history_openai_format, version, temperature)
-        text = response.choices[0].message.content
+        response = openai_core(history_openai_format, version, temperature)  # type: ignore[call-arg]
+        text = response.choices[0].message.content  # type: ignore[union-attr]
     except Exception as e:
         raise gr.Error(f"API 请求失败：{str(e)}")
 
